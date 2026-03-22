@@ -3,6 +3,7 @@ import { Plus, ChevronDown, ChevronRight, Download, Edit2, Trash2, CheckCircle2,
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useData } from '../contexts/DataContext';
 import Modal from '../components/common/Modal';
+import AddFrameworkWizard from '../components/compliance/AddFrameworkWizard';
 import { exportToCSV, exportCompliancePDF } from '../utils/exportUtils';
 
 const STATUS_CONFIG = {
@@ -254,7 +255,8 @@ const GapAnalysis = ({ framework, onBack }) => {
 const Compliance = () => {
   const { frameworks, addFramework, updateFramework, deleteFramework } = useData();
   const [selectedFw, setSelectedFw] = useState(null);
-  const [fwModal, setFwModal] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [editFwModal, setEditFwModal] = useState(false);
   const [editFw, setEditFw] = useState(null);
   const [showExport, setShowExport] = useState(false);
 
@@ -274,13 +276,15 @@ const Compliance = () => {
     nonCompliant: f.controls.filter(c => c.status === 'non-compliant').length,
   }));
 
-  const openAdd = () => { setEditFw(null); setFwModal(true); };
-  const openEdit = (fw) => { setEditFw(fw); setFwModal(true); };
+  const openEdit = (fw) => { setEditFw(fw); setEditFwModal(true); };
 
-  const handleSave = (data) => {
+  const handleWizardSave = (data) => {
+    addFramework(data);
+  };
+
+  const handleEditSave = (data) => {
     if (editFw) updateFramework(editFw.id, data);
-    else addFramework(data);
-    setFwModal(false);
+    setEditFwModal(false);
   };
 
   const handleDelete = (id) => {
@@ -306,7 +310,7 @@ const Compliance = () => {
               </div>
             )}
           </div>
-          <button onClick={openAdd} className="btn-primary flex items-center gap-2"><Plus size={15} /> Add Framework</button>
+          <button onClick={() => setWizardOpen(true)} className="btn-primary flex items-center gap-2"><Plus size={15} /> Add Framework</button>
         </div>
       </div>
 
@@ -381,14 +385,17 @@ const Compliance = () => {
           <div className="card text-center text-gray-400 py-12">
             <BarChart2 size={40} className="mx-auto mb-3 opacity-30" />
             <p>No compliance frameworks yet.</p>
-            <button onClick={openAdd} className="btn-primary mt-4">Add your first framework</button>
+            <button onClick={() => setWizardOpen(true)} className="btn-primary mt-4">Add your first framework</button>
           </div>
         )}
       </div>
 
-      {/* Framework Form Modal */}
-      <Modal isOpen={fwModal} onClose={() => setFwModal(false)} title={editFw ? 'Edit Framework' : 'Add Framework / Standard'}>
-        <FrameworkForm initial={editFw || {}} onSave={handleSave} onCancel={() => setFwModal(false)} />
+      {/* Add Framework Wizard */}
+      <AddFrameworkWizard isOpen={wizardOpen} onClose={() => setWizardOpen(false)} onSave={handleWizardSave} />
+
+      {/* Edit Framework Modal (keeps existing simple form) */}
+      <Modal isOpen={editFwModal} onClose={() => setEditFwModal(false)} title="Edit Framework">
+        <FrameworkForm initial={editFw || {}} onSave={handleEditSave} onCancel={() => setEditFwModal(false)} />
       </Modal>
     </div>
   );
