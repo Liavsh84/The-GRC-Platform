@@ -11,6 +11,7 @@ import UserManagement from './pages/UserManagement';
 import Audits from './pages/Audits';
 import MeetingSummaries from './pages/MeetingSummaries';
 import Settings from './pages/Settings';
+import AuthCallback from './pages/AuthCallback';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 
@@ -45,8 +46,9 @@ const AppRoutes = () => {
   if (!currentUser) {
     return (
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/login"         element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="*"              element={<Navigate to="/login" replace />} />
       </Routes>
     );
   }
