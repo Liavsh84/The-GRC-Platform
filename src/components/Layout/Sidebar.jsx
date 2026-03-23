@@ -58,15 +58,17 @@ const Sidebar = () => {
 
   return (
     <aside className="w-64 bg-slate-900 flex flex-col h-screen flex-shrink-0 border-r border-slate-800">
-      {/* Brand */}
+      {/* Brand — click to go home */}
       <div className="px-5 py-4 border-b border-slate-800">
-        <div className="flex items-center gap-3">
+        <button onClick={() => navigate('/')}
+          className="flex items-center gap-3 w-full rounded-xl hover:bg-slate-800 transition-colors p-1 -m-1"
+          title="Go to Dashboard">
           <img src="/grcx-logo.jpg" alt="GRCX" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
-          <div>
+          <div className="text-left">
             <p className="text-white font-bold text-sm leading-tight">GRCX</p>
             <p className="text-slate-400 text-xs">Governance · Risk · Compliance</p>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Navigation */}
