@@ -23,10 +23,11 @@ const adminItems = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-const NavItem = ({ to, icon: Icon, label, exact, expanded }) => (
+const NavItem = ({ to, icon: Icon, label, exact, expanded, onClose }) => (
   <NavLink
     to={to}
     end={exact}
+    onClick={onClose}
     title={!expanded ? label : undefined}
     className={({ isActive }) =>
       `flex items-center rounded-xl text-sm font-medium transition-all duration-200 group
@@ -47,7 +48,7 @@ const NavItem = ({ to, icon: Icon, label, exact, expanded }) => (
   </NavLink>
 );
 
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen, onMobileClose }) => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const [pinned, setPinned] = useState(() => {
@@ -55,7 +56,8 @@ const Sidebar = () => {
   });
   const [hovered, setHovered] = useState(false);
 
-  const expanded = pinned || hovered;
+  // Desktop: expand when pinned or hovered. Mobile: always expanded when open.
+  const desktopExpanded = pinned || hovered;
 
   const togglePin = (e) => {
     e.stopPropagation();
@@ -67,6 +69,7 @@ const Sidebar = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+    onMobileClose?.();
   };
 
   const initials = currentUser?.name
@@ -74,32 +77,52 @@ const Sidebar = () => {
     : '?';
 
   return (
-    <aside
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={`${expanded ? 'w-64' : 'w-16'} bg-slate-900 flex flex-col h-screen flex-shrink-0 border-r border-slate-800 transition-all duration-300 overflow-hidden z-40`}
-    >
-      {/* Brand */}
-      <div className="py-4 border-b border-slate-800 px-3 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate('/')}
-            title="Go to Dashboard"
-            className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-slate-800 transition-colors flex-shrink-0"
-          >
-            <img src="/grcx-logo.jpg" alt="GRCX" className="w-10 h-10 rounded-xl object-cover" />
-          </button>
+    <>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onMobileClose}
+        />
+      )}
 
-          {expanded && (
-            <>
+      <aside
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className={[
+          // Base
+          'bg-slate-900 flex flex-col h-screen border-r border-slate-800 transition-all duration-300 overflow-hidden z-50',
+          // Mobile: fixed overlay, slides in/out
+          'fixed md:relative inset-y-0 left-0',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          'md:translate-x-0',
+          // Width: mobile always wide, desktop depends on expanded state
+          'w-72',
+          desktopExpanded ? 'md:w-64' : 'md:w-16',
+        ].join(' ')}
+      >
+        {/* Brand */}
+        <div className="py-4 border-b border-slate-800 px-3 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { navigate('/'); onMobileClose?.(); }}
+              title="Go to Dashboard"
+              className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-slate-800 transition-colors flex-shrink-0"
+            >
+              <img src="/grcx-logo.jpg" alt="GRCX" className="w-10 h-10 rounded-xl object-cover" />
+            </button>
+
+            {/* Label + pin — always visible on mobile, conditional on desktop */}
+            <div className={`flex items-center gap-2 flex-1 min-w-0 ${desktopExpanded ? 'md:flex' : 'md:hidden'} flex`}>
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-white font-bold text-sm leading-tight">GRCX</p>
                 <p className="text-slate-400 text-xs">Governance · Risk · Compliance</p>
               </div>
+              {/* Pin button — desktop only */}
               <button
                 onClick={togglePin}
                 title={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
-                className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${
+                className={`p-1.5 rounded-lg transition-colors flex-shrink-0 hidden md:flex ${
                   pinned
                     ? 'text-blue-400 hover:text-blue-300 hover:bg-slate-700'
                     : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700'
@@ -107,35 +130,49 @@ const Sidebar = () => {
               >
                 {pinned ? <PinOff size={14} /> : <Pin size={14} />}
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className={`flex-1 py-4 overflow-y-auto space-y-1 ${desktopExpanded ? 'md:px-3' : 'md:px-2'} px-3`}>
+          {/* Section label — hidden when desktop collapsed */}
+          <p className={`text-slate-500 text-xs font-semibold uppercase tracking-wider px-1 mb-3 ${desktopExpanded ? 'md:block' : 'md:hidden'} block`}>
+            Main Menu
+          </p>
+          {navItems.map(item => (
+            <NavItem
+              key={item.to}
+              {...item}
+              expanded={mobileOpen || desktopExpanded}
+              onClose={onMobileClose}
+            />
+          ))}
+
+          {currentUser?.role === 'admin' && (
+            <>
+              <div className={`${desktopExpanded ? 'md:pt-4 md:pb-2' : 'md:pt-3 md:pb-1'} pt-4 pb-2`}>
+                <p className={`text-slate-500 text-xs font-semibold uppercase tracking-wider px-1 ${desktopExpanded ? 'md:block' : 'md:hidden'} block`}>
+                  Administration
+                </p>
+                <div className={`border-t border-slate-700 mx-1 ${desktopExpanded ? 'md:hidden' : 'md:block'} hidden`} />
+              </div>
+              {adminItems.map(item => (
+                <NavItem
+                  key={item.to}
+                  {...item}
+                  expanded={mobileOpen || desktopExpanded}
+                  onClose={onMobileClose}
+                />
+              ))}
             </>
           )}
-        </div>
-      </div>
+        </nav>
 
-      {/* Navigation */}
-      <nav className={`flex-1 ${expanded ? 'px-3' : 'px-2'} py-4 overflow-y-auto space-y-1`}>
-        {expanded && (
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider px-1 mb-3">Main Menu</p>
-        )}
-        {navItems.map(item => <NavItem key={item.to} {...item} expanded={expanded} />)}
-
-        {currentUser?.role === 'admin' && (
-          <>
-            <div className={`${expanded ? 'pt-4 pb-2' : 'pt-3 pb-1'}`}>
-              {expanded
-                ? <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider px-1">Administration</p>
-                : <div className="border-t border-slate-700 mx-1" />
-              }
-            </div>
-            {adminItems.map(item => <NavItem key={item.to} {...item} expanded={expanded} />)}
-          </>
-        )}
-      </nav>
-
-      {/* User Section */}
-      <div className={`${expanded ? 'px-3' : 'px-2'} py-3 border-t border-slate-800 flex-shrink-0`}>
-        {expanded ? (
-          <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-800 transition-colors">
+        {/* User Section */}
+        <div className={`py-3 border-t border-slate-800 flex-shrink-0 ${desktopExpanded ? 'md:px-3' : 'md:px-2'} px-3`}>
+          {/* Expanded view (mobile always, desktop when expanded) */}
+          <div className={`${desktopExpanded ? 'md:flex' : 'md:hidden'} flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-800 transition-colors`}>
             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               {initials}
             </div>
@@ -151,8 +188,9 @@ const Sidebar = () => {
               <LogOut size={15} />
             </button>
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-1">
+
+          {/* Collapsed view — desktop only */}
+          <div className={`${desktopExpanded ? 'md:hidden' : 'md:flex'} hidden flex-col items-center gap-1`}>
             <div
               className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold"
               title={currentUser?.name}
@@ -167,9 +205,9 @@ const Sidebar = () => {
               <LogOut size={14} />
             </button>
           </div>
-        )}
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </>
   );
 };
 

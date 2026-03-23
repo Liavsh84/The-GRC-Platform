@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Bell, AlertTriangle, ClipboardList, MessageSquare, Building2, X } from 'lucide-react';
+import { Bell, AlertTriangle, ClipboardList, MessageSquare, Building2, X, Menu } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -104,7 +104,7 @@ const NotificationPanel = ({ notifications, onClose, navigate }) => {
 };
 
 // ─── Header ───────────────────────────────────────────────────────────────────
-const Header = () => {
+const Header = ({ onMobileMenuToggle }) => {
   const { currentUser } = useAuth();
   const { risks, audits, meetings, thirdPartyRisks, frameworks, settings } = useData();
   const location = useLocation();
@@ -170,7 +170,15 @@ const Header = () => {
   const totalCount = notifications.length;
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 flex-shrink-0">
+    <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex items-center gap-3 flex-shrink-0">
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={onMobileMenuToggle}
+        className="md:hidden p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+        title="Toggle menu"
+      >
+        <Menu size={20} />
+      </button>
       <div className="flex-1">
         <h1 className="text-lg font-semibold text-gray-900">{pageName}</h1>
         <p className="text-xs text-gray-500">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
