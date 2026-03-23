@@ -56,13 +56,11 @@ const Sidebar = () => {
   return (
     <aside className="w-64 bg-slate-900 flex flex-col h-screen flex-shrink-0 border-r border-slate-800">
       {/* Brand */}
-      <div className="px-5 py-5 border-b border-slate-800">
+      <div className="px-5 py-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
-            <ShieldCheck size={20} className="text-white" />
-          </div>
+          <img src="/grcx-logo.jpg" alt="GRCX" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
           <div>
-            <p className="text-white font-bold text-sm leading-tight">The GRC Platform</p>
+            <p className="text-white font-bold text-sm leading-tight">GRCX</p>
             <p className="text-slate-400 text-xs">Governance · Risk · Compliance</p>
           </div>
         </div>

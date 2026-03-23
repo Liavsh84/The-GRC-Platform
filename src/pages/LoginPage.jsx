@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Eye, EyeOff, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
@@ -28,10 +28,8 @@ const LoginPage = () => {
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex-col justify-between p-12">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-            <ShieldCheck size={22} className="text-white" />
-          </div>
-          <span className="text-white font-bold text-xl">The GRC Platform</span>
+          <img src="/grcx-logo.jpg" alt="GRCX" className="w-10 h-10 rounded-xl object-cover" />
+          <span className="text-white font-bold text-xl">GRCX</span>
         </div>
 
         <div>
@@ -57,17 +55,15 @@ const LoginPage = () => {
           </div>
         </div>
 
-        <p className="text-slate-500 text-sm">© {new Date().getFullYear()} The GRC Platform</p>
+        <p className="text-slate-500 text-sm">© {new Date().getFullYear()} GRCX</p>
       </div>
 
       {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-              <ShieldCheck size={20} className="text-white" />
-            </div>
-            <span className="font-bold text-gray-900 text-lg">The GRC Platform</span>
+            <img src="/grcx-logo.jpg" alt="GRCX" className="w-9 h-9 rounded-xl object-cover" />
+            <span className="font-bold text-gray-900 text-lg">GRCX</span>
           </div>
 
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
