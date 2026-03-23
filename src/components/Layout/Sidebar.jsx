@@ -2,13 +2,14 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Shield, AlertTriangle, CheckSquare,
   FileBarChart, Users, LogOut, ChevronRight,
-  BookOpen, ClipboardList, MessageSquare, Settings
+  BookOpen, ClipboardList, MessageSquare, Settings, Briefcase
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const navItems = [
   { to: '/',                icon: LayoutDashboard, label: 'Dashboard',         exact: true },
   { to: '/governance',      icon: BookOpen,        label: 'Governance' },
+  { to: '/projects',        icon: Briefcase,       label: 'Projects' },
   { to: '/risk-management', icon: AlertTriangle,   label: 'Risk Management' },
   { to: '/compliance',      icon: CheckSquare,     label: 'Compliance' },
   { to: '/audits',          icon: ClipboardList,   label: 'Audits' },

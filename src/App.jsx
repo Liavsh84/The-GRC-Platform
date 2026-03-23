@@ -11,6 +11,7 @@ import UserManagement from './pages/UserManagement';
 import Audits from './pages/Audits';
 import MeetingSummaries from './pages/MeetingSummaries';
 import Settings from './pages/Settings';
+import Projects from './pages/Projects';
 import AuthCallback from './pages/AuthCallback';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
@@ -62,6 +63,7 @@ const AppRoutes = () => {
         <Route path="/governance"      element={<Governance />} />
         <Route path="/compliance"      element={<Compliance />} />
         <Route path="/risk-management" element={<RiskManagement />} />
+        <Route path="/projects"        element={<Projects />} />
         <Route path="/audits"          element={<Audits />} />
         <Route path="/meetings"        element={<MeetingSummaries />} />
         <Route path="/reports"         element={<Reports />} />

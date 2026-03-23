@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   initialGovernanceDocuments, initialComplianceFrameworks, initialRisks,
   initialAudits, initialThirdPartyRisks, initialMeetings, initialSettings,
+  initialProjects,
 } from '../data/initialData';
 import { dbLoad, dbSave } from '../lib/supabase';
 
@@ -30,13 +31,14 @@ export const DataProvider = ({ children }) => {
   const [thirdPartyRisks, setThirdPartyRisks] = useState(null);
   const [meetings,        setMeetings]        = useState(null);
   const [settings,        setSettings]        = useState(null);
+  const [projects,        setProjects]        = useState(null);
   const [dataLoading,     setDataLoading]     = useState(true);
   const initialized = useRef(false);
 
   // ─── Load all data on mount ────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
-      const [docs, fws, rks, auds, tprs, mtgs, stgs] = await Promise.all([
+      const [docs, fws, rks, auds, tprs, mtgs, stgs, projs] = await Promise.all([
         dbLoad('documents',       safeParseLocal('grc_documents')        ?? initialGovernanceDocuments),
         dbLoad('frameworks',      safeParseLocal('grc_frameworks')       ?? initialComplianceFrameworks),
         dbLoad('risks',           safeParseLocal('grc_risks')            ?? initialRisks),
@@ -44,6 +46,7 @@ export const DataProvider = ({ children }) => {
         dbLoad('thirdPartyRisks', safeParseLocal('grc_third_party')      ?? initialThirdPartyRisks),
         dbLoad('meetings',        safeParseLocal('grc_meetings')         ?? initialMeetings),
         dbLoad('settings',        safeParseLocal('grc_settings')         ?? initialSettings),
+        dbLoad('projects',        safeParseLocal('grc_projects')         ?? initialProjects),
       ]);
       setDocuments(docs);
       setFrameworks(fws);
@@ -52,6 +55,7 @@ export const DataProvider = ({ children }) => {
       setThirdPartyRisks(tprs);
       setMeetings(mtgs);
       setSettings(stgs);
+      setProjects(projs);
       setDataLoading(false);
       initialized.current = true;
     };
@@ -100,6 +104,11 @@ export const DataProvider = ({ children }) => {
     const t = syncEffect('settings', 'grc_settings', settings);
     return () => clearTimeout(t);
   }, [settings]);
+
+  useEffect(() => {
+    const t = syncEffect('projects', 'grc_projects', projects);
+    return () => clearTimeout(t);
+  }, [projects]);
 
   const today = () => new Date().toISOString().split('T')[0];
 
@@ -190,6 +199,17 @@ export const DataProvider = ({ children }) => {
   const deleteMeeting = (id) =>
     setMeetings(prev => (prev ?? []).filter(m => m.id !== id));
 
+  // ─── Projects ─────────────────────────────────────────────────────────────
+  const addProject = (project) => {
+    const n = { ...project, id: Date.now().toString(), createdAt: today(), updatedAt: today(), tasks: project.tasks || [] };
+    setProjects(prev => [...(prev ?? []), n]);
+    return n;
+  };
+  const updateProject = (id, u) =>
+    setProjects(prev => (prev ?? []).map(p => p.id === id ? { ...p, ...u, updatedAt: today() } : p));
+  const deleteProject = (id) =>
+    setProjects(prev => (prev ?? []).filter(p => p.id !== id));
+
   // ─── Settings ─────────────────────────────────────────────────────────────
   const updateSettings = (u) =>
     setSettings(prev => ({ ...(prev ?? initialSettings), ...u }));
@@ -203,6 +223,7 @@ export const DataProvider = ({ children }) => {
     setThirdPartyRisks(initialThirdPartyRisks);
     setMeetings(initialMeetings);
     setSettings(initialSettings);
+    setProjects(initialProjects);
   };
 
   return (
@@ -214,6 +235,7 @@ export const DataProvider = ({ children }) => {
       thirdPartyRisks: thirdPartyRisks ?? [],
       meetings:        meetings        ?? [],
       settings:        settings        ?? initialSettings,
+      projects:        projects        ?? [],
       dataLoading,
       addDocument,    updateDocument,    deleteDocument,
       addFramework,   updateFramework,   deleteFramework,
@@ -222,6 +244,7 @@ export const DataProvider = ({ children }) => {
       addAudit,       updateAudit,       deleteAudit,
       addThirdPartyRisk, updateThirdPartyRisk, deleteThirdPartyRisk,
       addMeeting,     updateMeeting,     deleteMeeting,
+      addProject,     updateProject,     deleteProject,
       updateSettings,
       resetToDefaults,
     }}>

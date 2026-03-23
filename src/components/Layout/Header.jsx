@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 const pageNames = {
   '/':                'Dashboard',
   '/governance':      'Governance',
+  '/projects':        'Projects',
   '/risk-management': 'Risk Management',
   '/compliance':      'Compliance',
   '/audits':          'Audits',
