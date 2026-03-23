@@ -1,24 +1,27 @@
-import { Bell, Search } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { useLocation } from 'react-router-dom';
 
 const pageNames = {
-  '/': 'Dashboard',
-  '/governance': 'Governance',
+  '/':                'Dashboard',
+  '/governance':      'Governance',
   '/risk-management': 'Risk Management',
-  '/compliance': 'Compliance',
-  '/reports': 'Reports',
-  '/users': 'User Management',
+  '/compliance':      'Compliance',
+  '/audits':          'Audits',
+  '/meetings':        'Meeting Summaries',
+  '/reports':         'Reports',
+  '/users':           'User Management',
+  '/settings':        'Settings',
 };
 
 const Header = () => {
   const { currentUser } = useAuth();
-  const { risks } = useData();
+  const { risks, settings } = useData();
   const location = useLocation();
 
   const criticalRisks = risks.filter(r => r.probability * r.impact >= 15 && r.status === 'open').length;
-  const pageName = pageNames[location.pathname] || 'GRC Platform';
+  const pageName = pageNames[location.pathname] || 'GRCX';
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 flex-shrink-0">
@@ -28,6 +31,13 @@ const Header = () => {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Company logo (if uploaded) */}
+        {settings?.companyLogo && (
+          <div className="flex items-center gap-2 border-r border-gray-200 pr-3">
+            <img src={settings.companyLogo} alt={settings.companyName || 'Company'} className="h-7 max-w-28 object-contain" title={settings.companyName} />
+          </div>
+        )}
+
         {/* Notifications */}
         <div className="relative">
           <button className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">

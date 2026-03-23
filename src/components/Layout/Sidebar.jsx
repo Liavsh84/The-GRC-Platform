@@ -1,21 +1,24 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Shield, AlertTriangle, CheckSquare,
-  FileBarChart, Users, LogOut, ShieldCheck, ChevronRight,
-  BookOpen, Settings
+  FileBarChart, Users, LogOut, ChevronRight,
+  BookOpen, ClipboardList, MessageSquare, Settings
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-  { to: '/governance', icon: BookOpen, label: 'Governance' },
-  { to: '/risk-management', icon: AlertTriangle, label: 'Risk Management' },
-  { to: '/compliance', icon: CheckSquare, label: 'Compliance' },
-  { to: '/reports', icon: FileBarChart, label: 'Reports' },
+  { to: '/',                icon: LayoutDashboard, label: 'Dashboard',         exact: true },
+  { to: '/governance',      icon: BookOpen,        label: 'Governance' },
+  { to: '/risk-management', icon: AlertTriangle,   label: 'Risk Management' },
+  { to: '/compliance',      icon: CheckSquare,     label: 'Compliance' },
+  { to: '/audits',          icon: ClipboardList,   label: 'Audits' },
+  { to: '/meetings',        icon: MessageSquare,   label: 'Meeting Summaries' },
+  { to: '/reports',         icon: FileBarChart,    label: 'Reports' },
 ];
 
 const adminItems = [
-  { to: '/users', icon: Users, label: 'User Management' },
+  { to: '/users',    icon: Users,    label: 'User Management' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 const NavItem = ({ to, icon: Icon, label, exact }) => (

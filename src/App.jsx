@@ -8,6 +8,9 @@ import Compliance from './pages/Compliance';
 import RiskManagement from './pages/RiskManagement';
 import Reports from './pages/Reports';
 import UserManagement from './pages/UserManagement';
+import Audits from './pages/Audits';
+import MeetingSummaries from './pages/MeetingSummaries';
+import Settings from './pages/Settings';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 
@@ -27,7 +30,7 @@ const LoadingScreen = () => (
   <div className="min-h-screen bg-slate-900 flex items-center justify-center">
     <div className="text-center">
       <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-      <p className="text-white text-xl font-semibold">Loading GRC Platform...</p>
+      <p className="text-white text-xl font-semibold">Loading GRCX...</p>
       <p className="text-slate-400 text-sm mt-2">Syncing data, please wait</p>
     </div>
   </div>
@@ -48,20 +51,22 @@ const AppRoutes = () => {
     );
   }
 
+  const isAdmin = currentUser.role === 'admin';
+
   return (
     <AppLayout>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/governance" element={<Governance />} />
-        <Route path="/compliance" element={<Compliance />} />
+        <Route path="/"                element={<Dashboard />} />
+        <Route path="/governance"      element={<Governance />} />
+        <Route path="/compliance"      element={<Compliance />} />
         <Route path="/risk-management" element={<RiskManagement />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route
-          path="/users"
-          element={currentUser.role === 'admin' ? <UserManagement /> : <Navigate to="/" replace />}
-        />
-        <Route path="/login" element={<Navigate to="/" replace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/audits"          element={<Audits />} />
+        <Route path="/meetings"        element={<MeetingSummaries />} />
+        <Route path="/reports"         element={<Reports />} />
+        <Route path="/users"           element={isAdmin ? <UserManagement /> : <Navigate to="/" replace />} />
+        <Route path="/settings"        element={isAdmin ? <Settings /> : <Navigate to="/" replace />} />
+        <Route path="/login"           element={<Navigate to="/" replace />} />
+        <Route path="*"                element={<Navigate to="/" replace />} />
       </Routes>
     </AppLayout>
   );

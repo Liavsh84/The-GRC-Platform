@@ -1,3 +1,129 @@
+export const initialSettings = {
+  companyName: 'My Organization',
+  companyLogo: null,
+  riskAppetite: { low: 5, medium: 9, high: 14 },
+};
+
+export const initialAudits = [
+  {
+    id: 'a1',
+    name: 'ISO 27001:2022 Internal Audit – Q1 2025',
+    type: 'internal',
+    standard: 'ISO 27001:2022',
+    scope: 'Information Security Management System – Clauses 4–10',
+    auditor: 'Internal Audit Team',
+    startDate: '2025-01-15',
+    endDate: '2025-01-20',
+    status: 'completed',
+    findings: [
+      { id: 'f1', title: 'Access control policy not reviewed', description: 'Access control policy has not been reviewed in over 12 months', severity: 'high', status: 'open', recommendation: 'Schedule quarterly policy review cycle', control: 'A.5.1' },
+      { id: 'f2', title: 'Backup procedures not documented', description: 'Backup and restore procedures are not fully documented', severity: 'medium', status: 'closed', recommendation: 'Update backup runbook with step-by-step procedures', control: 'A.8.13' },
+    ],
+    notes: '',
+    createdAt: '2025-01-10',
+  },
+  {
+    id: 'a2',
+    name: 'Annual External GDPR Audit',
+    type: 'external',
+    standard: 'GDPR',
+    scope: 'Data processing activities, privacy notices, and consent management',
+    auditor: 'External Auditors Ltd.',
+    startDate: '2025-02-01',
+    endDate: '2025-02-05',
+    status: 'completed',
+    findings: [
+      { id: 'f3', title: 'Privacy notice outdated', description: 'Website privacy notice does not reflect current data processing activities', severity: 'high', status: 'open', recommendation: 'Update privacy notice to reflect all processing activities', control: 'Art.13' },
+    ],
+    notes: 'Overall good compliance posture with minor gaps noted.',
+    createdAt: '2025-01-25',
+  },
+  {
+    id: 'a3',
+    name: 'Enterprise Risk Assessment 2025',
+    type: 'risk-assessment',
+    standard: 'ISO 27005',
+    scope: 'Enterprise-wide information security risk assessment',
+    auditor: 'Risk Management Team',
+    startDate: '2025-03-01',
+    endDate: '2025-03-10',
+    status: 'in-progress',
+    findings: [
+      { id: 'f4', title: 'Cloud misconfiguration risk', description: 'Improperly configured S3 buckets identified with public access enabled', severity: 'critical', status: 'open', recommendation: 'Implement CSPM tool and remediate all public buckets', control: 'A.8.9', probability: 3, impact: 5 },
+      { id: 'f5', title: 'High phishing susceptibility', description: 'Simulated phishing campaign showed 22% click rate', severity: 'high', status: 'open', recommendation: 'Increase security awareness training frequency to quarterly', control: 'A.6.3', probability: 4, impact: 3 },
+    ],
+    notes: '',
+    createdAt: '2025-02-20',
+  },
+];
+
+export const initialThirdPartyRisks = [
+  {
+    id: 'tp1',
+    name: 'Amazon Web Services (AWS)',
+    category: 'Cloud Infrastructure',
+    criticality: 'critical',
+    description: 'Primary cloud infrastructure and hosting provider',
+    contactName: 'AWS Account Manager',
+    contactEmail: 'aws@company.com',
+    inherentRisk: 4,
+    residualRisk: 2,
+    status: 'active',
+    lastReview: '2025-01-01',
+    nextReview: '2025-07-01',
+    nistControls: ['SR-2', 'SR-3', 'SR-5', 'SR-6'],
+    notes: 'SOC 2 Type II report reviewed annually.',
+  },
+  {
+    id: 'tp2',
+    name: 'Salesforce CRM',
+    category: 'SaaS / CRM',
+    criticality: 'high',
+    description: 'Customer relationship management system processing customer PII',
+    contactName: 'Salesforce CSM',
+    contactEmail: 'salesforce@company.com',
+    inherentRisk: 3,
+    residualRisk: 2,
+    status: 'active',
+    lastReview: '2024-12-01',
+    nextReview: '2025-06-01',
+    nistControls: ['SR-2', 'SR-6', 'SR-8'],
+    notes: 'DPA signed. Annual security review completed.',
+  },
+];
+
+export const initialMeetings = [
+  {
+    id: 'm1',
+    title: 'Management Review Q1 2025 – ISO 27001',
+    type: 'Management Review',
+    standard: 'ISO 27001:2022',
+    date: '2025-03-15',
+    facilitator: 'Admin User',
+    attendees: ['Admin User', 'John Smith', 'Mary Jones'],
+    agenda: [
+      'Status of actions from previous management reviews',
+      'Changes in internal/external issues relevant to ISMS',
+      'Feedback on information security performance',
+      'Results of risk assessment and risk treatment plan',
+      'Opportunities for continual improvement',
+    ],
+    decisions: [
+      'Approved updated Information Security Policy v2.2',
+      'Extended ISMS scope to include cloud environments',
+      'Increased security awareness training budget by 20%',
+    ],
+    actionItems: [
+      { id: 'ai1', description: 'Update risk register with cloud risk findings', owner: 'Admin User', dueDate: '2025-04-01', status: 'open' },
+      { id: 'ai2', description: 'Schedule next internal audit for Q2', owner: 'Mary Jones', dueDate: '2025-04-15', status: 'open' },
+    ],
+    nextMeetingDate: '2025-06-15',
+    status: 'final',
+    notes: 'Quorum achieved. All agenda items discussed.',
+    createdAt: '2025-03-15',
+  },
+];
+
 export const initialUsers = [
   { id: '1', username: 'admin', password: 'admin123', role: 'admin', name: 'Admin User', email: 'admin@company.com', department: 'IT Security', createdAt: '2024-01-01' },
   { id: '2', username: 'jsmith', password: 'user123', role: 'user', name: 'John Smith', email: 'jsmith@company.com', department: 'Risk Management', createdAt: '2024-01-15' },

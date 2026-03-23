@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { initialGovernanceDocuments, initialComplianceFrameworks, initialRisks } from '../data/initialData';
+import {
+  initialGovernanceDocuments, initialComplianceFrameworks, initialRisks,
+  initialAudits, initialThirdPartyRisks, initialMeetings, initialSettings,
+} from '../data/initialData';
 import { dbLoad, dbSave } from '../lib/supabase';
 
 const DataContext = createContext(null);
@@ -14,128 +17,213 @@ function safeParseLocal(key) {
   try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
 }
 
+function makeSyncEffect(key, state, initialized) {
+  // Returns [effect, deps] — used below to DRY up the sync effects
+  return [key, state, initialized];
+}
+
 export const DataProvider = ({ children }) => {
-  const [documents, setDocuments] = useState(null);
-  const [frameworks, setFrameworks] = useState(null);
-  const [risks, setRisks] = useState(null);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [documents,       setDocuments]       = useState(null);
+  const [frameworks,      setFrameworks]       = useState(null);
+  const [risks,           setRisks]           = useState(null);
+  const [audits,          setAudits]          = useState(null);
+  const [thirdPartyRisks, setThirdPartyRisks] = useState(null);
+  const [meetings,        setMeetings]        = useState(null);
+  const [settings,        setSettings]        = useState(null);
+  const [dataLoading,     setDataLoading]     = useState(true);
   const initialized = useRef(false);
 
-  // Load all data on mount
+  // ─── Load all data on mount ────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
-      const [docs, fws, rks] = await Promise.all([
-        dbLoad('documents', safeParseLocal('grc_documents') ?? initialGovernanceDocuments),
-        dbLoad('frameworks', safeParseLocal('grc_frameworks') ?? initialComplianceFrameworks),
-        dbLoad('risks',     safeParseLocal('grc_risks')      ?? initialRisks),
+      const [docs, fws, rks, auds, tprs, mtgs, stgs] = await Promise.all([
+        dbLoad('documents',       safeParseLocal('grc_documents')        ?? initialGovernanceDocuments),
+        dbLoad('frameworks',      safeParseLocal('grc_frameworks')       ?? initialComplianceFrameworks),
+        dbLoad('risks',           safeParseLocal('grc_risks')            ?? initialRisks),
+        dbLoad('audits',          safeParseLocal('grc_audits')           ?? initialAudits),
+        dbLoad('thirdPartyRisks', safeParseLocal('grc_third_party')      ?? initialThirdPartyRisks),
+        dbLoad('meetings',        safeParseLocal('grc_meetings')         ?? initialMeetings),
+        dbLoad('settings',        safeParseLocal('grc_settings')         ?? initialSettings),
       ]);
       setDocuments(docs);
       setFrameworks(fws);
       setRisks(rks);
+      setAudits(auds);
+      setThirdPartyRisks(tprs);
+      setMeetings(mtgs);
+      setSettings(stgs);
       setDataLoading(false);
       initialized.current = true;
     };
     init();
   }, []);
 
-  // Sync each slice to Supabase + localStorage
+  // ─── Sync helpers ─────────────────────────────────────────────────────────
+  const syncEffect = (key, localKey, state) => {
+    if (!initialized.current || state === null) return;
+    localStorage.setItem(localKey, JSON.stringify(state));
+    const t = setTimeout(() => dbSave(key, state), 500);
+    return t;
+  };
+
   useEffect(() => {
-    if (!initialized.current || documents === null) return;
-    localStorage.setItem('grc_documents', JSON.stringify(documents));
-    const t = setTimeout(() => dbSave('documents', documents), 500);
+    const t = syncEffect('documents', 'grc_documents', documents);
     return () => clearTimeout(t);
   }, [documents]);
 
   useEffect(() => {
-    if (!initialized.current || frameworks === null) return;
-    localStorage.setItem('grc_frameworks', JSON.stringify(frameworks));
-    const t = setTimeout(() => dbSave('frameworks', frameworks), 500);
+    const t = syncEffect('frameworks', 'grc_frameworks', frameworks);
     return () => clearTimeout(t);
   }, [frameworks]);
 
   useEffect(() => {
-    if (!initialized.current || risks === null) return;
-    localStorage.setItem('grc_risks', JSON.stringify(risks));
-    const t = setTimeout(() => dbSave('risks', risks), 500);
+    const t = syncEffect('risks', 'grc_risks', risks);
     return () => clearTimeout(t);
   }, [risks]);
 
+  useEffect(() => {
+    const t = syncEffect('audits', 'grc_audits', audits);
+    return () => clearTimeout(t);
+  }, [audits]);
+
+  useEffect(() => {
+    const t = syncEffect('thirdPartyRisks', 'grc_third_party', thirdPartyRisks);
+    return () => clearTimeout(t);
+  }, [thirdPartyRisks]);
+
+  useEffect(() => {
+    const t = syncEffect('meetings', 'grc_meetings', meetings);
+    return () => clearTimeout(t);
+  }, [meetings]);
+
+  useEffect(() => {
+    const t = syncEffect('settings', 'grc_settings', settings);
+    return () => clearTimeout(t);
+  }, [settings]);
+
   const today = () => new Date().toISOString().split('T')[0];
 
-  // ─── Governance ──────────────────────────────────────────────────────────────
+  // ─── Governance ──────────────────────────────────────────────────────────
   const addDocument = (doc) => {
-    const newDoc = { ...doc, id: Date.now().toString(), createdAt: today(), updatedAt: today() };
-    setDocuments(prev => [...(prev ?? []), newDoc]);
-    return newDoc;
+    const n = { ...doc, id: Date.now().toString(), createdAt: today(), updatedAt: today() };
+    setDocuments(prev => [...(prev ?? []), n]);
+    return n;
   };
-  const updateDocument = (id, updates) => {
-    setDocuments(prev => (prev ?? []).map(d => d.id === id ? { ...d, ...updates, updatedAt: today() } : d));
-  };
-  const deleteDocument = (id) => setDocuments(prev => (prev ?? []).filter(d => d.id !== id));
+  const updateDocument = (id, u) =>
+    setDocuments(prev => (prev ?? []).map(d => d.id === id ? { ...d, ...u, updatedAt: today() } : d));
+  const deleteDocument = (id) =>
+    setDocuments(prev => (prev ?? []).filter(d => d.id !== id));
 
-  // ─── Compliance ──────────────────────────────────────────────────────────────
+  // ─── Compliance ──────────────────────────────────────────────────────────
   const addFramework = (fw) => {
-    const newFw = { ...fw, id: Date.now().toString(), addedAt: today(), controls: fw.controls || [] };
-    setFrameworks(prev => [...(prev ?? []), newFw]);
-    return newFw;
+    const n = { ...fw, id: Date.now().toString(), addedAt: today(), controls: fw.controls || [] };
+    setFrameworks(prev => [...(prev ?? []), n]);
+    return n;
   };
-  const updateFramework = (id, updates) => {
-    setFrameworks(prev => (prev ?? []).map(f => f.id === id ? { ...f, ...updates } : f));
-  };
-  const deleteFramework = (id) => setFrameworks(prev => (prev ?? []).filter(f => f.id !== id));
+  const updateFramework = (id, u) =>
+    setFrameworks(prev => (prev ?? []).map(f => f.id === id ? { ...f, ...u } : f));
+  const deleteFramework = (id) =>
+    setFrameworks(prev => (prev ?? []).filter(f => f.id !== id));
 
   const addControl = (frameworkId, control) => {
-    const newControl = { ...control, id: Date.now().toString() };
+    const n = { ...control, id: Date.now().toString() };
     setFrameworks(prev => (prev ?? []).map(f =>
-      f.id !== frameworkId ? f : { ...f, controls: [...f.controls, newControl] }
+      f.id !== frameworkId ? f : { ...f, controls: [...f.controls, n] }
     ));
   };
-  const updateControl = (frameworkId, controlId, updates) => {
+  const updateControl = (frameworkId, controlId, u) =>
     setFrameworks(prev => (prev ?? []).map(f => {
       if (f.id !== frameworkId) return f;
-      return { ...f, controls: f.controls.map(c => c.id === controlId ? { ...c, ...updates } : c) };
+      return { ...f, controls: f.controls.map(c => c.id === controlId ? { ...c, ...u } : c) };
     }));
-  };
-  const deleteControl = (frameworkId, controlId) => {
+  const deleteControl = (frameworkId, controlId) =>
     setFrameworks(prev => (prev ?? []).map(f => {
       if (f.id !== frameworkId) return f;
       return { ...f, controls: f.controls.filter(c => c.id !== controlId) };
     }));
-  };
 
-  // ─── Risk Management ─────────────────────────────────────────────────────────
+  // ─── Risk Management ─────────────────────────────────────────────────────
   const addRisk = (risk) => {
-    const newRisk = { ...risk, id: Date.now().toString(), dateIdentified: today(), lastReview: today() };
-    setRisks(prev => [...(prev ?? []), newRisk]);
-    return newRisk;
+    const n = { ...risk, id: Date.now().toString(), dateIdentified: today(), lastReview: today() };
+    setRisks(prev => [...(prev ?? []), n]);
+    return n;
   };
-  const updateRisk = (id, updates) => {
-    setRisks(prev => (prev ?? []).map(r => r.id === id ? { ...r, ...updates, lastReview: today() } : r));
-  };
-  const deleteRisk = (id) => setRisks(prev => (prev ?? []).filter(r => r.id !== id));
+  const updateRisk = (id, u) =>
+    setRisks(prev => (prev ?? []).map(r => r.id === id ? { ...r, ...u, lastReview: today() } : r));
+  const deleteRisk = (id) =>
+    setRisks(prev => (prev ?? []).filter(r => r.id !== id));
 
+  // ─── Audits ──────────────────────────────────────────────────────────────
+  const addAudit = (audit) => {
+    const n = { ...audit, id: Date.now().toString(), createdAt: today(), findings: audit.findings || [] };
+    setAudits(prev => [...(prev ?? []), n]);
+    return n;
+  };
+  const updateAudit = (id, u) =>
+    setAudits(prev => (prev ?? []).map(a => a.id === id ? { ...a, ...u } : a));
+  const deleteAudit = (id) =>
+    setAudits(prev => (prev ?? []).filter(a => a.id !== id));
+
+  // ─── Third-Party Risk ─────────────────────────────────────────────────────
+  const addThirdPartyRisk = (vendor) => {
+    const n = { ...vendor, id: Date.now().toString() };
+    setThirdPartyRisks(prev => [...(prev ?? []), n]);
+    return n;
+  };
+  const updateThirdPartyRisk = (id, u) =>
+    setThirdPartyRisks(prev => (prev ?? []).map(v => v.id === id ? { ...v, ...u } : v));
+  const deleteThirdPartyRisk = (id) =>
+    setThirdPartyRisks(prev => (prev ?? []).filter(v => v.id !== id));
+
+  // ─── Meetings ─────────────────────────────────────────────────────────────
+  const addMeeting = (meeting) => {
+    const n = {
+      ...meeting, id: Date.now().toString(), createdAt: today(),
+      attendees: meeting.attendees || [], agenda: meeting.agenda || [],
+      decisions: meeting.decisions || [], actionItems: meeting.actionItems || [],
+    };
+    setMeetings(prev => [...(prev ?? []), n]);
+    return n;
+  };
+  const updateMeeting = (id, u) =>
+    setMeetings(prev => (prev ?? []).map(m => m.id === id ? { ...m, ...u } : m));
+  const deleteMeeting = (id) =>
+    setMeetings(prev => (prev ?? []).filter(m => m.id !== id));
+
+  // ─── Settings ─────────────────────────────────────────────────────────────
+  const updateSettings = (u) =>
+    setSettings(prev => ({ ...(prev ?? initialSettings), ...u }));
+
+  // ─── Reset ────────────────────────────────────────────────────────────────
   const resetToDefaults = async () => {
     setDocuments(initialGovernanceDocuments);
     setFrameworks(initialComplianceFrameworks);
     setRisks(initialRisks);
-    await Promise.all([
-      dbSave('documents', initialGovernanceDocuments),
-      dbSave('frameworks', initialComplianceFrameworks),
-      dbSave('risks', initialRisks),
-    ]);
+    setAudits(initialAudits);
+    setThirdPartyRisks(initialThirdPartyRisks);
+    setMeetings(initialMeetings);
+    setSettings(initialSettings);
   };
 
   return (
     <DataContext.Provider value={{
-      documents:  documents  ?? [],
-      frameworks: frameworks ?? [],
-      risks:      risks      ?? [],
-      addDocument, updateDocument, deleteDocument,
-      addFramework, updateFramework, deleteFramework,
-      addControl, updateControl, deleteControl,
-      addRisk, updateRisk, deleteRisk,
-      resetToDefaults,
+      documents:       documents       ?? [],
+      frameworks:      frameworks      ?? [],
+      risks:           risks           ?? [],
+      audits:          audits          ?? [],
+      thirdPartyRisks: thirdPartyRisks ?? [],
+      meetings:        meetings        ?? [],
+      settings:        settings        ?? initialSettings,
       dataLoading,
+      addDocument,    updateDocument,    deleteDocument,
+      addFramework,   updateFramework,   deleteFramework,
+      addControl,     updateControl,     deleteControl,
+      addRisk,        updateRisk,        deleteRisk,
+      addAudit,       updateAudit,       deleteAudit,
+      addThirdPartyRisk, updateThirdPartyRisk, deleteThirdPartyRisk,
+      addMeeting,     updateMeeting,     deleteMeeting,
+      updateSettings,
+      resetToDefaults,
     }}>
       {children}
     </DataContext.Provider>
