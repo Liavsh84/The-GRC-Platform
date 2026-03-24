@@ -170,15 +170,34 @@ const GapAnalysis = ({ framework, onBack }) => {
         </div>
       </div>
 
-      {/* Score + Stats */}
-      <div className="grid grid-cols-5 gap-3">
-        <div className="card col-span-1 flex flex-col items-center justify-center py-4">
-          <div className={`text-3xl font-bold ${score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>{score}%</div>
-          <p className="text-xs text-gray-500 mt-1">Compliance Score</p>
+      {/* Progress bar — like Screen 2 */}
+      <div className="card py-4 px-5">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-semibold text-gray-700">{framework.name} Progress</span>
+          <span className={`text-sm font-bold ${score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>{score}% Complete</span>
         </div>
+        <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+          <div
+            className={`h-5 rounded-full flex items-center justify-end pr-3 transition-all duration-700 ${score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+            style={{ width: `${Math.max(score, 4)}%` }}
+          >
+            {score >= 20 && <span className="text-xs font-bold text-white">{score}%</span>}
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-3 text-sm">
+          <span className="text-gray-500">Controls: <strong className="text-gray-900">{framework.controls.length}</strong></span>
+          <span className="text-green-600">Passed: <strong>{counts.compliant}</strong></span>
+          <span className="text-red-600">Failed: <strong>{counts['non-compliant']}</strong></span>
+          <span className="text-yellow-600">Partial: <strong>{counts.partial}</strong></span>
+          <span className="text-gray-400">N/A: <strong>{counts['not-applicable']}</strong></span>
+        </div>
+      </div>
+
+      {/* Status filter tiles */}
+      <div className="grid grid-cols-4 gap-3">
         {Object.entries(STATUS_CONFIG).map(([k, cfg]) => (
           <button key={k} onClick={() => setFilterStatus(filterStatus === k ? 'all' : k)}
-            className={`card py-3 text-center cursor-pointer transition-all ${filterStatus === k ? 'ring-2 ring-blue-500' : 'hover:shadow-sm'}`}>
+            className={`card py-3 text-center cursor-pointer transition-all ${filterStatus === k ? 'ring-2 ring-blue-500 shadow-md' : 'hover:shadow-sm'}`}>
             <cfg.icon size={20} className={`mx-auto mb-1 ${cfg.iconColor}`} />
             <p className="text-xl font-bold text-gray-900">{counts[k]}</p>
             <p className="text-xs text-gray-500">{cfg.label}</p>
