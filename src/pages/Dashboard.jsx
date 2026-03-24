@@ -33,9 +33,10 @@ const DOC_TYPE_COLORS = {
 };
 
 // ─── Clickable KPI card ───────────────────────────────────────────────────────
-const KPICard = ({ icon: Icon, label, value, sub, color, trend, onClick }) => (
+const KPICard = ({ icon: Icon, label, value, sub, color, trend, onClick, tip }) => (
   <button
     onClick={onClick}
+    data-tip={tip}
     className="card flex items-start gap-4 text-left w-full hover:shadow-md hover:-translate-y-0.5 transition-all group"
   >
     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
@@ -92,9 +93,9 @@ const Dashboard = () => {
   const recentDocs = [...documents].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).slice(0, 5);
 
   const pillars = [
-    { label: 'Governance',      icon: BookOpen,       to: '/governance',      color: 'bg-blue-600',   stat: `${documents.length} documents`,  sub: `${approvedDocs} approved` },
-    { label: 'Risk Management', icon: AlertTriangle,  to: '/risk-management', color: 'bg-orange-500', stat: `${risks.length} risks`,           sub: `${criticalRisks} critical` },
-    { label: 'Compliance',      icon: CheckSquare,    to: '/compliance',      color: 'bg-green-600',  stat: `${complianceScore}% score`,       sub: `${frameworks.length} frameworks` },
+    { label: 'Governance',      icon: BookOpen,       to: '/governance',      color: 'bg-blue-600',   stat: `${documents.length} documents`,  sub: `${approvedDocs} approved`,        tip: 'Manage policies, procedures and your document hierarchy' },
+    { label: 'Risk Management', icon: AlertTriangle,  to: '/risk-management', color: 'bg-orange-500', stat: `${risks.length} risks`,           sub: `${criticalRisks} critical`,       tip: 'Track and treat risks using probability × impact scoring' },
+    { label: 'Compliance',      icon: CheckSquare,    to: '/compliance',      color: 'bg-green-600',  stat: `${complianceScore}% score`,       sub: `${frameworks.length} frameworks`, tip: 'Monitor control status across regulatory frameworks' },
   ];
 
   return (
@@ -107,16 +108,16 @@ const Dashboard = () => {
 
       {/* KPI Cards — all clickable */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard icon={BookOpen}    label="Total Documents"    value={documents.length}   sub={`${approvedDocs} approved`}      color="bg-blue-600"   onClick={() => navigate('/governance')} />
-        <KPICard icon={CheckSquare} label="Compliance Score"   value={`${complianceScore}%`} sub={`${totalControls} controls`}  color="bg-green-600"  onClick={() => navigate('/compliance')} />
-        <KPICard icon={AlertTriangle} label="Open Risks"       value={openRisks}          sub={`${criticalRisks} critical`}     color="bg-orange-500" onClick={() => navigate('/risk-management')} />
-        <KPICard icon={ShieldAlert} label="Frameworks Tracked" value={frameworks.length}  sub={`${totalControls} total controls`} color="bg-purple-600" onClick={() => navigate('/compliance')} />
+        <KPICard icon={BookOpen}    label="Total Documents"    value={documents.length}   sub={`${approvedDocs} approved`}        color="bg-blue-600"   onClick={() => navigate('/governance')}    tip="Policies, procedures, standards & guidelines — click to manage" />
+        <KPICard icon={CheckSquare} label="Compliance Score"  value={`${complianceScore}%`} sub={`${totalControls} controls`}    color="bg-green-600"  onClick={() => navigate('/compliance')}    tip="% of controls marked compliant across all frameworks — click to view" />
+        <KPICard icon={AlertTriangle} label="Open Risks"      value={openRisks}            sub={`${criticalRisks} critical`}     color="bg-orange-500" onClick={() => navigate('/risk-management')} tip="Active risks requiring attention — click to manage" />
+        <KPICard icon={ShieldAlert} label="Frameworks Tracked" value={frameworks.length}  sub={`${totalControls} total controls`} color="bg-purple-600" onClick={() => navigate('/compliance')}    tip="Compliance frameworks monitored (ISO 27001, GDPR, NIST…) — click to view" />
       </div>
 
       {/* Three Pillars */}
       <div className="grid grid-cols-3 gap-4">
         {pillars.map(p => (
-          <button key={p.to} onClick={() => navigate(p.to)}
+          <button key={p.to} onClick={() => navigate(p.to)} data-tip={p.tip}
             className="card text-left hover:shadow-md hover:-translate-y-0.5 transition-all group">
             <div className="flex items-center justify-between mb-3">
               <div className={`w-10 h-10 ${p.color} rounded-xl flex items-center justify-center`}>
@@ -134,7 +135,7 @@ const Dashboard = () => {
       {/* Charts Row */}
       <div className="grid grid-cols-2 gap-6">
         {/* Compliance by Framework */}
-        <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/compliance')}>
+        <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/compliance')} data-tip="Click to view detailed compliance per framework">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Compliance Score by Framework</h3>
             <span className="text-xs text-blue-600 hover:underline">View all →</span>
@@ -150,7 +151,7 @@ const Dashboard = () => {
         </div>
 
         {/* Risk Distribution */}
-        <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/risk-management')}>
+        <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/risk-management')} data-tip="Click to open the full risk register">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Risk Distribution by Level</h3>
             <span className="text-xs text-blue-600 hover:underline">View all →</span>
@@ -175,7 +176,7 @@ const Dashboard = () => {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Top Risks</h3>
-            <button onClick={() => navigate('/risk-management')} className="text-xs text-blue-600 hover:underline">View all →</button>
+            <button onClick={() => navigate('/risk-management')} className="text-xs text-blue-600 hover:underline" data-tip="Open Risk Management">View all →</button>
           </div>
           <div className="space-y-1">
             {topRisks.length === 0 && <p className="text-sm text-gray-400 py-4 text-center">No risks recorded yet</p>}
@@ -185,9 +186,9 @@ const Dashboard = () => {
               return (
                 <button key={r.id} onClick={() => navigate('/risk-management')}
                   className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors w-full text-left border-b border-gray-100 last:border-0 group">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${RISK_ROW_COLORS[level]}`}>{level}</span>
-                  <span className="text-sm text-gray-800 flex-1 truncate">{r.title}</span>
-                  <span className="text-sm font-bold text-gray-500 group-hover:text-gray-900 transition-colors">{score}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${RISK_ROW_COLORS[level]}`} data-tip={`${level}: ${level === 'Critical' ? 'Immediate action required (score ≥15)' : level === 'High' ? 'Urgent attention needed (score 10–14)' : level === 'Medium' ? 'Schedule treatment (score 6–9)' : 'Monitor regularly (score 1–5)'}`}>{level}</span>
+                  <span className="text-sm text-gray-800 flex-1 truncate" data-tip={r.title}>{r.title}</span>
+                  <span className="text-sm font-bold text-gray-500 group-hover:text-gray-900 transition-colors" data-tip="Probability × Impact score">{score}</span>
                   <ChevronRight size={13} className="text-gray-300 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
                 </button>
               );
@@ -199,14 +200,14 @@ const Dashboard = () => {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Recent Documents</h3>
-            <button onClick={() => navigate('/governance')} className="text-xs text-blue-600 hover:underline">View all →</button>
+            <button onClick={() => navigate('/governance')} className="text-xs text-blue-600 hover:underline" data-tip="Open Governance">View all →</button>
           </div>
           <div className="space-y-1">
             {recentDocs.length === 0 && <p className="text-sm text-gray-400 py-4 text-center">No documents yet</p>}
             {recentDocs.map(d => (
               <button key={d.id} onClick={() => navigate('/governance')}
                 className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-gray-50 transition-colors w-full text-left border-b border-gray-100 last:border-0 group">
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 capitalize ${DOC_TYPE_COLORS[d.type] || 'bg-gray-100 text-gray-700'}`}>{d.type}</span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 capitalize ${DOC_TYPE_COLORS[d.type] || 'bg-gray-100 text-gray-700'}`} data-tip={d.type === 'policy' ? 'Policy: high-level statement of intent' : d.type === 'procedure' ? 'Procedure: step-by-step operational instructions' : d.type === 'standard' ? 'Standard: mandatory requirements & specs' : d.type === 'guideline' ? 'Guideline: recommended best practices' : d.type}>{d.type}</span>
                 <span className="text-sm text-gray-800 flex-1 truncate">{d.title}</span>
                 <span className="text-xs text-gray-400 flex-shrink-0">{d.updatedAt}</span>
                 <ChevronRight size={13} className="text-gray-300 group-hover:text-blue-500 flex-shrink-0 transition-colors" />

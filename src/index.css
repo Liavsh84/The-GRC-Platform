@@ -65,6 +65,16 @@
   @apply bg-gray-500;
 }
 
+/* Tooltip animation */
+@keyframes tooltip-appear {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.tooltip-root > div:first-child {
+  animation: tooltip-appear 0.13s ease-out forwards;
+  transform-origin: center bottom;
+}
+
 /* SVG graph animations */
 .graph-node {
   transition: all 0.2s ease;

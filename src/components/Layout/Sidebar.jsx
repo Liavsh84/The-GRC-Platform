@@ -28,7 +28,7 @@ const NavItem = ({ to, icon: Icon, label, exact, expanded, onClose }) => (
     to={to}
     end={exact}
     onClick={onClose}
-    title={!expanded ? label : undefined}
+    data-tip={!expanded ? label : undefined}
     className={({ isActive }) =>
       `flex items-center rounded-xl text-sm font-medium transition-all duration-200 group
       ${expanded ? 'gap-3 px-3 py-2.5 w-full' : 'justify-center py-2.5 w-10 mx-auto'}
@@ -106,7 +106,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { navigate('/'); onMobileClose?.(); }}
-              title="Go to Dashboard"
+              data-tip="Go to Dashboard"
               className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-slate-800 transition-colors flex-shrink-0"
             >
               <img src="/grcx-logo.jpg" alt="GRCX" className="w-10 h-10 rounded-xl object-cover" />
@@ -121,7 +121,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
               {/* Pin button — desktop only */}
               <button
                 onClick={togglePin}
-                title={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                data-tip={pinned ? 'Unpin sidebar' : 'Pin sidebar open'}
                 className={`p-1.5 rounded-lg transition-colors flex-shrink-0 hidden md:flex ${
                   pinned
                     ? 'text-blue-400 hover:text-blue-300 hover:bg-slate-700'
@@ -182,7 +182,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
             </div>
             <button
               onClick={handleLogout}
-              title="Log out"
+              data-tip="Log out"
               className="p-1 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors flex-shrink-0"
             >
               <LogOut size={15} />
@@ -199,7 +199,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
             </div>
             <button
               onClick={handleLogout}
-              title="Log out"
+              data-tip="Log out"
               className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors"
             >
               <LogOut size={14} />

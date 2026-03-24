@@ -16,6 +16,7 @@ import Projects from './pages/Projects';
 import AuthCallback from './pages/AuthCallback';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
+import GlobalTooltip from './components/UI/Tooltip';
 
 const AppLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -85,6 +86,7 @@ const App = () => (
     <AuthProvider>
       <DataProvider>
         <AppRoutes />
+        <GlobalTooltip />
       </DataProvider>
     </AuthProvider>
   </BrowserRouter>

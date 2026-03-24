@@ -175,7 +175,7 @@ const Header = ({ onMobileMenuToggle }) => {
       <button
         onClick={onMobileMenuToggle}
         className="md:hidden p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
-        title="Toggle menu"
+        data-tip="Toggle navigation menu"
       >
         <Menu size={20} />
       </button>
@@ -197,7 +197,7 @@ const Header = ({ onMobileMenuToggle }) => {
           <button
             onClick={() => setOpen(o => !o)}
             className={`p-2 rounded-xl transition-colors ${open ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-            title={totalCount > 0 ? `${totalCount} notification${totalCount > 1 ? 's' : ''}` : 'No notifications'}
+            data-tip={totalCount > 0 ? `${totalCount} alert${totalCount !== 1 ? 's' : ''} — ${critCount > 0 ? `${critCount} critical` : 'none critical'}` : 'No active alerts'}
           >
             <Bell size={18} />
           </button>
@@ -216,7 +216,7 @@ const Header = ({ onMobileMenuToggle }) => {
         </div>
 
         {/* User chip */}
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5">
+        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5" data-tip={`${currentUser?.role} · ${currentUser?.department}`}>
           <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
             {currentUser?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
           </div>
