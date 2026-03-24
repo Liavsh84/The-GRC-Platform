@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   Plus, Search, List, GitBranch, Download, Edit2, Trash2, FileText, X,
-  ChevronDown, Upload, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+  ChevronDown, Upload, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Wand2,
 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -334,6 +334,403 @@ const HierarchyEditor = ({ documents, onUpdate, onEdit, onAdd, onDelete }) => {
   );
 };
 
+// ─── Document Creation Wizard ──────────────────────────────────────────────────
+const WIZARD_STEPS = ['Type', 'Context', 'Details', 'Template', 'Review'];
+
+const TYPE_CARDS = [
+  { value: 'policy',    label: 'Policy',    icon: '📋', desc: 'High-level statement of organizational intent and direction. Mandatory compliance expected.', color: 'border-blue-400 bg-blue-50',   active: 'ring-blue-500' },
+  { value: 'procedure', label: 'Procedure', icon: '⚙️', desc: 'Step-by-step operational instructions for completing a specific task or process.',            color: 'border-purple-400 bg-purple-50', active: 'ring-purple-500' },
+  { value: 'standard',  label: 'Standard',  icon: '📏', desc: 'Mandatory technical requirements and specifications that must be met.',                         color: 'border-green-400 bg-green-50',  active: 'ring-green-500' },
+  { value: 'guideline', label: 'Guideline', icon: '💡', desc: 'Recommended best practices and advice — informational, not strictly mandatory.',                color: 'border-yellow-400 bg-yellow-50', active: 'ring-yellow-500' },
+];
+
+const ORG_SIZES = [
+  { value: 'small',      label: '1–50',      sub: 'Small' },
+  { value: 'medium',     label: '51–200',    sub: 'Medium' },
+  { value: 'large',      label: '201–1,000', sub: 'Large' },
+  { value: 'enterprise', label: '1,000+',    sub: 'Enterprise' },
+];
+
+const GEO_SCOPES = ['Single Location', 'Multi-Office', 'Multi-Country', 'Global'];
+
+const REGULATION_OPTIONS = ['ISO 27001', 'ISO 22301', 'GDPR', 'CCPA', 'NIS2', 'NIST CSF', 'SOC 2', 'HIPAA', 'PCI-DSS', 'None / Internal only'];
+
+const CLASSIFICATIONS = [
+  { value: 'public',       label: 'Public',       desc: 'No access restrictions',    dot: 'bg-green-500' },
+  { value: 'internal',     label: 'Internal',     desc: 'Employees only',            dot: 'bg-blue-500'  },
+  { value: 'confidential', label: 'Confidential', desc: 'Limited / need-to-know',    dot: 'bg-orange-500' },
+  { value: 'restricted',   label: 'Restricted',   desc: 'Strictly controlled access', dot: 'bg-red-500'  },
+];
+
+const REVIEW_FREQS = ['Annually', 'Semi-annually', 'Quarterly', 'Upon Major Change Only'];
+
+const CONTENT_OUTLINE = {
+  policy:    ['1. Purpose & Objective', '2. Scope & Applicability', '3. Policy Statements', '4. Roles & Responsibilities', '5. Compliance & Enforcement', '6. Exceptions & Waivers', '7. Related Documents', '8. Review & Revision History'],
+  procedure: ['1. Purpose', '2. Scope', '3. Prerequisites & Resources', '4. Procedure Steps', '5. Roles & Responsibilities', '6. Exception Handling', '7. References & Related Documents', '8. Review History'],
+  standard:  ['1. Purpose', '2. Scope', '3. Mandatory Requirements', '4. Technical Specifications', '5. Compliance Criteria & Testing', '6. Exceptions', '7. References', '8. Review History'],
+  guideline: ['1. Introduction', '2. Applicability', '3. Recommendations', '4. Best Practices', '5. Examples & Use Cases', '6. Useful Resources', '7. Glossary', '8. Review History'],
+};
+
+const TYPE_PREFIX = { policy: 'POL', procedure: 'PRO', standard: 'STD', guideline: 'GDL' };
+const DEPT_PREFIX  = { IT: 'IT', HR: 'HR', Finance: 'FIN', Operations: 'OPS', Legal: 'LEG', Compliance: 'COM', Procurement: 'PRC', 'Risk Management': 'RSK' };
+
+const EMPTY_WIZARD = {
+  type: '', department: 'IT', orgSize: '', geographicScope: '', regulations: [], classification: 'internal',
+  title: '', documentId: '', version: '1.0', owner: '', approver: '', effectiveDate: '',
+  reviewFrequency: 'Annually', scope: '', parentId: null,
+  fileData: null, fileName: null, fileType: null, content: '', tags: '',
+};
+
+const DocWizard = ({ documents, onSave, onCancel }) => {
+  const { currentUser } = useAuth();
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({ ...EMPTY_WIZARD, owner: currentUser?.name || '' });
+  const fileRef = useRef(null);
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const toggleReg = (r) => set('regulations',
+    form.regulations.includes(r) ? form.regulations.filter(x => x !== r) : [...form.regulations, r]
+  );
+
+  // Auto-generated document ID
+  const autoId = useMemo(() => {
+    if (!form.type) return '';
+    const tp = TYPE_PREFIX[form.type] || 'DOC';
+    const dp = DEPT_PREFIX[form.department] || form.department.slice(0, 3).toUpperCase();
+    const prefix = `${tp}-${dp}`;
+    const n = documents.filter(d => (d.documentId || '').startsWith(prefix)).length + 1;
+    return `${prefix}-${String(n).padStart(3, '0')}`;
+  }, [form.type, form.department, documents]);
+
+  const handleFile = (e) => {
+    const file = e.target.files[0]; e.target.value = '';
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('Maximum file size is 5 MB.'); return; }
+    const reader = new FileReader();
+    reader.onload = (evt) => setForm(f => ({ ...f, fileData: evt.target.result, fileName: file.name, fileType: file.type }));
+    reader.readAsDataURL(file);
+  };
+
+  const canNext = () => {
+    if (step === 0) return !!form.type;
+    if (step === 1) return !!form.department && !!form.orgSize && !!form.geographicScope && !!form.classification;
+    if (step === 2) return !!(form.title.trim()) && !!(form.owner.trim());
+    return true;
+  };
+
+  const handleCreate = () => {
+    const tags = typeof form.tags === 'string'
+      ? form.tags.split(',').map(t => t.trim()).filter(Boolean)
+      : form.tags;
+    onSave({
+      title: form.title.trim(), type: form.type, department: form.department,
+      status: 'draft', version: form.version || '1.0',
+      createdBy: form.owner, approver: form.approver,
+      effectiveDate: form.effectiveDate, reviewFrequency: form.reviewFrequency,
+      scope: form.scope, classification: form.classification,
+      orgSize: form.orgSize, geographicScope: form.geographicScope,
+      regulations: form.regulations,
+      documentId: (form.documentId || autoId),
+      parentId: form.parentId,
+      fileData: form.fileData, fileName: form.fileName, fileType: form.fileType,
+      content: form.content, tags,
+    });
+  };
+
+  // ── Step renders ────────────────────────────────────────────────────────────
+  const renderStep = () => {
+    switch (step) {
+      // ── Step 0: Type selection
+      case 0: return (
+        <div>
+          <p className="text-sm text-gray-500 mb-5">Choose the document type that best describes its purpose in your governance framework.</p>
+          <div className="grid grid-cols-2 gap-3">
+            {TYPE_CARDS.map(c => (
+              <button key={c.value} type="button" onClick={() => set('type', c.value)}
+                className={`p-5 rounded-xl border-2 text-left transition-all hover:shadow-md
+                  ${form.type === c.value ? `${c.color} ring-2 ${c.active} shadow-md` : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <span className="text-3xl mb-3 block">{c.icon}</span>
+                <p className="font-bold text-gray-900 text-base mb-1">{c.label}</p>
+                <p className="text-xs text-gray-500 leading-relaxed">{c.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+
+      // ── Step 1: Context
+      case 1: return (
+        <div className="space-y-6">
+          <p className="text-sm text-gray-500">Answer these questions to tailor the document to your organization's context.</p>
+
+          {/* Department */}
+          <div>
+            <label className="label">Which department owns this document? *</label>
+            <select className="input-field" value={form.department} onChange={e => set('department', e.target.value)}>
+              {DEPT_OPTIONS.map(d => <option key={d}>{d}</option>)}
+            </select>
+          </div>
+
+          {/* Org size */}
+          <div>
+            <label className="label">What is your organization's size? *</label>
+            <div className="grid grid-cols-4 gap-2">
+              {ORG_SIZES.map(o => (
+                <button key={o.value} type="button" onClick={() => set('orgSize', o.value)}
+                  className={`p-3 rounded-xl border-2 text-center transition-all
+                    ${form.orgSize === o.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <p className="font-bold text-gray-900 text-sm">{o.label}</p>
+                  <p className="text-xs text-gray-500">{o.sub}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Geographic scope */}
+          <div>
+            <label className="label">What is the geographic scope of this document? *</label>
+            <div className="grid grid-cols-2 gap-2">
+              {GEO_SCOPES.map(g => (
+                <button key={g} type="button" onClick={() => set('geographicScope', g)}
+                  className={`py-2.5 px-4 rounded-xl border-2 text-sm font-medium transition-all
+                    ${form.geographicScope === g ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300 text-gray-700'}`}>
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Regulations */}
+          <div>
+            <label className="label">Which regulations or frameworks does this document support? <span className="font-normal text-gray-400">(select all that apply)</span></label>
+            <div className="flex flex-wrap gap-2">
+              {REGULATION_OPTIONS.map(r => (
+                <button key={r} type="button" onClick={() => toggleReg(r)}
+                  className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all
+                    ${form.regulations.includes(r) ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-200 hover:border-gray-300 text-gray-700 bg-white'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Classification */}
+          <div>
+            <label className="label">Data classification *</label>
+            <div className="grid grid-cols-4 gap-2">
+              {CLASSIFICATIONS.map(c => (
+                <button key={c.value} type="button" onClick={() => set('classification', c.value)}
+                  className={`p-3 rounded-xl border-2 text-left transition-all
+                    ${form.classification === c.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  <div className={`w-2.5 h-2.5 rounded-full ${c.dot} mb-2`} />
+                  <p className="font-semibold text-gray-900 text-xs">{c.label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{c.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+
+      // ── Step 2: Details
+      case 2: return (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Fill in the document metadata. The ID has been auto-generated but you can edit it.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="label">Document Title *</label>
+              <input className="input-field" value={form.title} onChange={e => set('title', e.target.value)}
+                placeholder={`e.g. ${form.department} ${form.type ? form.type.charAt(0).toUpperCase() + form.type.slice(1) : 'Document'}`} />
+            </div>
+            <div>
+              <label className="label">Document ID</label>
+              <input className="input-field font-mono text-sm" value={form.documentId || autoId}
+                onChange={e => set('documentId', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Version</label>
+              <input className="input-field" value={form.version} onChange={e => set('version', e.target.value)} placeholder="1.0" />
+            </div>
+            <div>
+              <label className="label">Document Owner / Author *</label>
+              <input className="input-field" value={form.owner} onChange={e => set('owner', e.target.value)} placeholder="Full name" />
+            </div>
+            <div>
+              <label className="label">Approver</label>
+              <input className="input-field" value={form.approver} onChange={e => set('approver', e.target.value)} placeholder="Full name" />
+            </div>
+            <div>
+              <label className="label">Effective Date</label>
+              <input type="date" className="input-field" value={form.effectiveDate} onChange={e => set('effectiveDate', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Review Frequency</label>
+              <select className="input-field" value={form.reviewFrequency} onChange={e => set('reviewFrequency', e.target.value)}>
+                {REVIEW_FREQS.map(r => <option key={r}>{r}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="label">Scope — Who and what does this apply to?</label>
+              <textarea className="input-field resize-none" rows={2} value={form.scope} onChange={e => set('scope', e.target.value)}
+                placeholder="e.g. All employees, contractors, and third parties with access to company information systems…" />
+            </div>
+            <div className="col-span-2">
+              <label className="label">Position in Hierarchy</label>
+              <select className="input-field" value={form.parentId || ''} onChange={e => set('parentId', e.target.value || null)}>
+                <option value="">Top-level (directly under Governance Framework)</option>
+                {documents.map(d => <option key={d.id} value={d.id}>{d.title} ({d.type})</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="label">Tags <span className="font-normal text-gray-400">(comma-separated)</span></label>
+              <input className="input-field" value={form.tags} onChange={e => set('tags', e.target.value)}
+                placeholder="e.g. security, access-control, ISO27001, annual-review" />
+            </div>
+          </div>
+        </div>
+      );
+
+      // ── Step 3: Template & Content
+      case 3: return (
+        <div className="space-y-5">
+          <p className="text-sm text-gray-500">Upload your organization's existing template, or use the guided structure below to get started.</p>
+
+          {/* Upload area */}
+          <div>
+            <label className="label">Upload Organization Template <span className="font-normal text-gray-400">(optional — PDF or Word, max 5 MB)</span></label>
+            <input ref={fileRef} type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden" onChange={handleFile} />
+            {form.fileName ? (
+              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                <FileText size={20} className="text-blue-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-blue-800 flex-1 truncate">{form.fileName}</span>
+                <button type="button"
+                  onClick={() => setForm(f => ({ ...f, fileData: null, fileName: null, fileType: null }))}
+                  className="p-1 rounded-lg hover:bg-blue-100 text-blue-600 transition-colors"><X size={14} /></button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="w-full border-2 border-dashed border-gray-300 rounded-xl py-8 px-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all group">
+                <Upload size={28} className="mx-auto text-gray-400 group-hover:text-blue-500 mb-2" />
+                <p className="text-sm font-medium text-gray-600 group-hover:text-blue-600">Click to upload your organization's template</p>
+                <p className="text-xs text-gray-400 mt-1">PDF · DOC · DOCX — max 5 MB</p>
+              </button>
+            )}
+          </div>
+
+          {/* Suggested structure */}
+          {form.type && (
+            <div>
+              <label className="label">Suggested structure for a <span className="capitalize font-semibold">{form.type}</span></label>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                {CONTENT_OUTLINE[form.type]?.map(s => (
+                  <div key={s} className="flex items-center gap-2.5 text-sm text-gray-700">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                    {s}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Optional notes */}
+          <div>
+            <label className="label">Additional notes or initial content <span className="font-normal text-gray-400">(optional)</span></label>
+            <textarea className="input-field resize-none" rows={4} value={form.content} onChange={e => set('content', e.target.value)}
+              placeholder="Add any initial content, purpose statement, or key points for this document…" />
+          </div>
+        </div>
+      );
+
+      // ── Step 4: Review
+      case 4: return (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">Review everything before creating. The document will be saved as a <strong>Draft</strong> — you can edit and approve it later.</p>
+          <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-200">
+            {[
+              ['Document Type',         form.type ? form.type.charAt(0).toUpperCase() + form.type.slice(1) : '—'],
+              ['Department',            form.department],
+              ['Document ID',           form.documentId || autoId],
+              ['Title',                 form.title || '—'],
+              ['Owner / Author',        form.owner || '—'],
+              ['Approver',              form.approver || '—'],
+              ['Version',               form.version || '1.0'],
+              ['Effective Date',        form.effectiveDate || '—'],
+              ['Review Frequency',      form.reviewFrequency],
+              ['Organization Size',     ORG_SIZES.find(o => o.value === form.orgSize)?.label || '—'],
+              ['Geographic Scope',      form.geographicScope || '—'],
+              ['Classification',        CLASSIFICATIONS.find(c => c.value === form.classification)?.label || '—'],
+              ['Frameworks / Regs',     form.regulations.length ? form.regulations.join(', ') : '—'],
+              ['Scope',                 form.scope || '—'],
+              ['Tags',                  form.tags || '—'],
+              ['Template Uploaded',     form.fileName || 'None'],
+              ['Hierarchy Position',    form.parentId ? documents.find(d => d.id === form.parentId)?.title || '—' : 'Top-level'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-start gap-4 px-4 py-2.5 even:bg-white">
+                <span className="text-xs font-semibold text-gray-500 w-40 flex-shrink-0 pt-0.5">{k}</span>
+                <span className="text-sm text-gray-800 flex-1">{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+      default: return null;
+    }
+  };
+
+  return (
+    <div>
+      {/* Progress stepper */}
+      <div className="flex items-center mb-8">
+        {WIZARD_STEPS.map((s, i) => (
+          <div key={s} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                ${i < step  ? 'bg-blue-600 text-white'
+                : i === step ? 'bg-blue-600 text-white ring-4 ring-blue-100'
+                :              'bg-gray-200 text-gray-500'}`}>
+                {i < step ? '✓' : i + 1}
+              </div>
+              <span className={`text-xs font-medium whitespace-nowrap ${i === step ? 'text-blue-600' : 'text-gray-400'}`}>{s}</span>
+            </div>
+            {i < WIZARD_STEPS.length - 1 && (
+              <div className={`flex-1 h-0.5 mx-2 mb-5 transition-all ${i < step ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Step title */}
+      <h3 className="text-lg font-bold text-gray-900 mb-1">
+        {['What type of document are you creating?', 'Organizational context', 'Document details', 'Template & content', 'Review & create'][step]}
+      </h3>
+
+      {/* Step content */}
+      <div className="min-h-64">{renderStep()}</div>
+
+      {/* Navigation */}
+      <div className="flex justify-between mt-8 pt-5 border-t border-gray-200">
+        <button type="button" onClick={step === 0 ? onCancel : () => setStep(s => s - 1)} className="btn-secondary">
+          {step === 0 ? 'Cancel' : '← Back'}
+        </button>
+        {step < WIZARD_STEPS.length - 1 ? (
+          <button type="button" onClick={() => setStep(s => s + 1)} disabled={!canNext()}
+            className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
+            Next →
+          </button>
+        ) : (
+          <button type="button" onClick={handleCreate}
+            className="btn-primary flex items-center gap-2 bg-green-600 hover:bg-green-700 focus:ring-green-500">
+            <Wand2 size={15} /> Create Document
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ─── Document Form ─────────────────────────────────────────────────────────────
 const DocForm = ({ initial, onSave, onCancel }) => {
   const { currentUser } = useAuth();
@@ -413,6 +810,7 @@ const Governance = () => {
   const [filterDept,   setFilterDept]   = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen,    setModalOpen]    = useState(false);
+  const [wizardOpen,   setWizardOpen]   = useState(false);
   const [editDoc,      setEditDoc]      = useState(null);
   const [newDocParent, setNewDocParent] = useState(null);
   const [viewDoc,      setViewDoc]      = useState(null);
@@ -429,7 +827,7 @@ const Governance = () => {
     return true;
   }), [documents, search, filterType, filterDept, filterStatus]);
 
-  const openAdd = (parentId = null) => { setEditDoc(null); setNewDocParent(parentId); setModalOpen(true); };
+  const openAdd = (parentId = null) => { setNewDocParent(parentId); setWizardOpen(true); };
   const openEdit = (doc) => { setEditDoc(doc); setNewDocParent(null); setModalOpen(true); };
 
   const handleSave = (data) => {
@@ -437,6 +835,12 @@ const Governance = () => {
     if (editDoc) updateDocument(editDoc.id, { ...data, updatedAt: now });
     else addDocument({ ...data, parentId: newDocParent ?? null });
     setModalOpen(false);
+  };
+
+  const handleWizardSave = (data) => {
+    const now = new Date().toISOString().split('T')[0];
+    addDocument({ ...data, parentId: data.parentId ?? newDocParent ?? null, createdAt: now, updatedAt: now });
+    setWizardOpen(false);
   };
 
   const handleDelete = (id) => {
@@ -503,7 +907,7 @@ const Governance = () => {
             )}
           </div>
           <button onClick={() => openAdd(null)} className="btn-primary flex items-center gap-2">
-            <Plus size={15} /> New Document
+            <Wand2 size={15} /> Create Document
           </button>
         </div>
       </div>
@@ -622,9 +1026,19 @@ const Governance = () => {
         </div>
       )}
 
-      {/* ── Add / Edit Modal ── */}
+      {/* ── Create Wizard Modal ── */}
+      <Modal isOpen={wizardOpen} onClose={() => setWizardOpen(false)}
+        title="Create New Document" size="lg">
+        <DocWizard
+          documents={documents}
+          onSave={handleWizardSave}
+          onCancel={() => setWizardOpen(false)}
+        />
+      </Modal>
+
+      {/* ── Edit Modal (simple form) ── */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}
-        title={editDoc ? 'Edit Document' : 'New Document'} size="lg">
+        title="Edit Document" size="lg">
         <DocForm
           initial={editDoc ?? { parentId: newDocParent }}
           onSave={handleSave}
